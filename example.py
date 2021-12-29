@@ -9,7 +9,7 @@ for line in f0:
         ra00 = float(line.split(",")[5])
         dec00 = float(line.split(",")[6])
         z00 = float(line.split(",")[9])
-        pv = calculate_pv(SNID,folder01,ra00,dec00,z00,modelflag=0,extrapolation="Yes")
+        pv = calculate_pv(SNID,folder01,ra00,dec00,z00,extrapolation="Yes")
         print (SNID,pv)
 f0.close()
 #---------------------------------------------------------------------------------------#

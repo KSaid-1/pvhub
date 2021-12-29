@@ -38,23 +38,22 @@ for line in open(usemodel,"r"):
         vpred_x.append(float(line.split()[4]))
         vpred_y.append(float(line.split()[5]))
         vpred_z.append(float(line.split()[6]))
-#--------------------------------------------------------------------#
-def calculate_pv(mastername,mastersource,RA,DEC,z_cmb_in,modelflag=0,extrapolation="Yes"):
-#--------------------------------------------------------------------------------------------#
-    dmin = -20000.
-    dmax = 20000.
-    nbins = 129
-    bsz = ((dmax-dmin)/float(nbins-1.))
+        
+dmin = -20000.
+dmax = 20000.
+nbins = 129
+bsz = ((dmax-dmin)/float(nbins-1.))
 #----------------------------------------------------------------------------------------------------------#
 #--------------Model beyond Vext---------------------------------------------------------------------------#
-    zcmb_m=[];vx=[];vy=[];vz=[]
-    for line in open(usemodel2,"r"):
-        if line[0]!='#':
-            zcmb_m.append(float(line.split()[0]))
-            vx.append(float(line.split()[7]))
-            vy.append(float(line.split()[8]))
-            vz.append(float(line.split()[9]))
-#---------------------------------------------------------------------------------------------#
+zcmb_m=[];vx=[];vy=[];vz=[]
+for line in open(usemodel2,"r"):
+    if line[0]!='#':
+        zcmb_m.append(float(line.split()[0]))
+        vx.append(float(line.split()[7]))
+        vy.append(float(line.split()[8]))
+        vz.append(float(line.split()[9]))
+#--------------------------------------------------------------------#
+def calculate_pv(mastername,mastersource,RA,DEC,z_cmb_in,extrapolation="Yes"):
     ra0 = RA
     dec0 = DEC
     cz  = c*z_cmb_in
