@@ -1,2 +1,1 @@
-# pvhub
-# This repo allows you predict pv for any position on the sky using reconstructions
+# pvhub: projected line of sight pv, pv_x, pv_y, and pv_z
