@@ -71,17 +71,17 @@ def calculate_pv(mastername,mastersource,RA,DEC,z_cmb_in,extrapolation="Yes"):
         v_y = vpred_y[binindex]
         v_z = vpred_z[binindex]
 #            if pv != -10000.:
-        return 'pv=',int(round(pv,0)),'pv_err=',250,'within reconstruction:','True'
+        return 'pv=',int(round(pv,0)),'pv_x=',v_x,'pv_y=',v_y,'pv_z=',v_z,'within reconstruction:','True'
     else:
         if extrapolation == 'No':
-            return 'pv=',9999,'pv_err=',9999,'within reconstruction:','False'
+            return 'pv=',9999,'pv_x=',9999,'pv_y=',9999,'pv_z=',9999,'within reconstruction:','False'
         if extrapolation == 'Yes':
             k = np.searchsorted(zcmb_m, zcmb)
             vx01 = vx[k]
             vy01 = vy[k]
             vz01 = vz[k]
             vpred = ((sgc.sgx.value*vx01)+(sgc.sgy.value*vy01)+(sgc.sgz.value*vz01))/(np.sqrt(sgc.sgx.value**2.+sgc.sgy.value**2.+sgc.sgz.value**2.))
-            return 'pv=',int(round(vpred,0)),'pv_err=',250,'within reconstruction:','False'
+            return 'pv=',int(round(vpred,0)),'pv_x=',vx01,'pv_y=',vy01,'pv_z=',vz01,'within reconstruction:','False'
         else:
             print("Unknown extrapolation type")
             raise ValueError
