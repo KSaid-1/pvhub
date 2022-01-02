@@ -5,31 +5,28 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 c = 299792.458
 #----------------------------------------------------------------#
-#modelflag = int(input("modelflag? "))
-modelflag = 0
+modelflag = int(input("modelflag? "))
+#modelflag = 0
 #----------------------------------------------------------------#
 if modelflag == 0:
     usemodel = '2MPP_redshift.txt'
-    usemodel2 = 'expectation03_at_z_1.txt'
+    usemodel2 = '2MPP_redshift_out.txt'
 if modelflag == 1:
-    usemodel = '2MPP_wo_vext.txt'
-    usemodel2 = 'expectation03_at_z_1.txt'
+    usemodel = '2MPP_SDSS.txt'
+    usemodel2 = '2MPP_SDSS_out.txt'
 if modelflag == 2:
-    usemodel = '2MPP_SDSS_Said2020.txt'
-    usemodel2 = 'expectation03_at_z_1.txt'
+    usemodel = '2MPP_SDSS_6dF.txt'
+    usemodel2 = '2MPP_SDSS_6dF_out.txt'
 if modelflag == 3:
-    usemodel = '2MPP_joint_Said2020.txt'
-    usemodel2 = 'expectation03_at_z_1.txt'
-if modelflag == 4:
-    usemodel = '2MRS_lilow_Nusser2021.txt'
-    usemodel2 = 'expectation03_at_z_1.txt'
-if modelflag > 4:
+    usemodel = '2MRS_redshift.txt'
+    usemodel2 = '2MRS_redshift_out.txt'
+if modelflag > 3:
     print("Unknown Model")
     raise ValueError
 #-------------------------------------------------------------------------------------------#
 sgx_tm = []; sgy_tm = []; sgz_tm = []; vpred_pr = []
 vpred_x = []; vpred_y = []; vpred_z = []; vproj = []
-for line in open(usemodel,"r"):
+for line in open('./data/'+usemodel,"r"):
     if line[0] != '#':
         sgx_tm.append(float(line.split()[0]))
         sgy_tm.append(float(line.split()[1]))
@@ -46,7 +43,7 @@ bsz = ((dmax-dmin)/float(nbins-1.))
 #----------------------------------------------------------------------------------------------------------#
 #--------------Model beyond Vext---------------------------------------------------------------------------#
 zcmb_m=[];vx=[];vy=[];vz=[]
-for line in open(usemodel2,"r"):
+for line in open('./data/'+usemodel2,"r"):
     if line[0]!='#':
         zcmb_m.append(float(line.split()[0]))
         vx.append(float(line.split()[7]))
@@ -71,17 +68,17 @@ def calculate_pv(mastername,mastersource,RA,DEC,z_cmb_in,extrapolation="Yes"):
         v_y = vpred_y[binindex]
         v_z = vpred_z[binindex]
 #            if pv != -10000.:
-        return 'pv=',int(round(pv,0)),'pv_x=',v_x,'pv_y=',v_y,'pv_z=',v_z,'within reconstruction:','True'
+        return 'pv=',int(round(pv,0)),'within reconstruction:','True'
     else:
         if extrapolation == 'No':
-            return 'pv=',9999,'pv_x=',9999,'pv_y=',9999,'pv_z=',9999,'within reconstruction:','False'
+            return 'pv=',9999,'within reconstruction:','False'
         if extrapolation == 'Yes':
             k = np.searchsorted(zcmb_m, zcmb)
             vx01 = vx[k]
             vy01 = vy[k]
             vz01 = vz[k]
             vpred = ((sgc.sgx.value*vx01)+(sgc.sgy.value*vy01)+(sgc.sgz.value*vz01))/(np.sqrt(sgc.sgx.value**2.+sgc.sgy.value**2.+sgc.sgz.value**2.))
-            return 'pv=',int(round(vpred,0)),'pv_x=',vx01,'pv_y=',vy01,'pv_z=',vz01,'within reconstruction:','False'
+            return 'pv=',int(round(vpred,0)),'within reconstruction:','False'
         else:
             print("Unknown extrapolation type")
             raise ValueError
