@@ -1,7 +1,6 @@
-from pvhub import whichmodel
-from pvhub import calculate_pv
+from pvhub import*
 #-------------------------------------------------------------------------------------#
-f0 = open("./inputs/PantheonAllnewest.csv","r")
+f0 = open("./inputs/example.csv","r")
 #--------------------------------------------------------------------------------------#
 for line in f0:
     if line[0]!='#':
