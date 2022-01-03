@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 c = 299792.458
 #----------------------------------------------------------------#
 modelflag = int(input("modelflag? "))
-#modelflag = 0
+#modelflag = 1
 #----------------------------------------------------------------#
 if modelflag == 0:
     usemodel = '2MPP_redshift.txt'

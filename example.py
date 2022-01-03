@@ -1,4 +1,5 @@
-from pvhub import*
+from pvhub import whichmodel
+from pvhub import calculate_pv
 #-------------------------------------------------------------------------------------#
 f0 = open("./inputs/PantheonAllnewest.csv","r")
 #--------------------------------------------------------------------------------------#
