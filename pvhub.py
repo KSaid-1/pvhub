@@ -5,8 +5,8 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 c = 299792.458
 #----------------------------------------------------------------#
-modelflag = int(input("Which model should I use? 0. 2MPP-SDSS (Said+22), 1. 2MPP-SDSS-6dF (Said+22), 2. 2MRS (Lilow & Nusser 2021), 3. 2MPP (Carrick+2015) ---->"))
-#modelflag = 1
+modelflag = 0
+#modelflag = int(input("Which model should I use? 0. 2MPP-SDSS (Said+22), 1. 2MPP-SDSS-6dF (Said+22), 2. 2MRS (Lilow & Nusser 2021), 3. 2MPP (Carrick+2015) ---->"))
 #----------------------------------------------------------------#
 if modelflag == 0:
     usemodel = '2MPP_SDSS.txt'
