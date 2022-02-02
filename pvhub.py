@@ -5,21 +5,21 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 c = 299792.458
 #----------------------------------------------------------------#
-modelflag = int(input("modelflag? "))
+modelflag = int(input("Which model should I use? 0. 2MPP-SDSS (Said+22), 1. 2MPP-SDSS-6dF (Said+22), 2. 2MRS (Lilow & Nusser 2021), 3. 2MPP (Carrick+2015) ---->"))
 #modelflag = 1
 #----------------------------------------------------------------#
 if modelflag == 0:
-    usemodel = '2MPP_redshift.txt'
-    usemodel2 = '2MPP_redshift_out.txt'
-if modelflag == 1:
     usemodel = '2MPP_SDSS.txt'
     usemodel2 = '2MPP_SDSS_out.txt'
-if modelflag == 2:
+if modelflag == 1:
     usemodel = '2MPP_SDSS_6dF.txt'
     usemodel2 = '2MPP_SDSS_6dF_out.txt'
-if modelflag == 3:
+if modelflag == 2:
     usemodel = '2MRS_redshift.txt'
     usemodel2 = '2MRS_redshift_out.txt'
+if modelflag == 3:
+    usemodel = '2MPP_redshift.txt'
+    usemodel2 = '2MPP_redshift_out.txt'
 if modelflag > 3:
     print("Unknown Model")
     raise ValueError
