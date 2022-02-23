@@ -1,6 +1,6 @@
 # pvhub: 
 Function to predict peculiar velocities given RA (right ascension), Dec (declination), and z (redshift). All maps are in redshift-space.
-All maps are limited to z < 0.67 with a flag in the function for extrapolation option. Conversion from real-space to redshift space as well as 
+All maps are limited to z < 0.067 with a flag in the function for extrapolation option. Conversion from real-space to redshift space as well as 
 the extrapolation option are explained by Carr et al. (2021) here https://arxiv.org/abs/2112.01471  
 # default map: 
 0. 2MPP-SDSS (Said et al. 2020; Peterson et al. 2021; Carr et al. 2021) 
