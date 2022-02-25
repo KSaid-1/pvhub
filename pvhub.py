@@ -45,7 +45,7 @@ vz = inp["Vsgz"]
 
 
 def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
-    cz = c * z_cmb_in
+    cz = c * np.array(z_cmb_in)
     zcmb = z_cmb_in
     ccc = SkyCoord(
         RA * u.degree, DEC * u.degree, distance=cz * u.km / u.s, frame="icrs"
@@ -58,9 +58,13 @@ def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
     binindex = (
         xbin.astype(int) * nbins * nbins + ybin.astype(int) * nbins + zbin.astype(int)
     )  # calculate bin index even if coords outside 2M++
-    binindex[
-        np.where((binindex < 0) | (binindex >= len(vproj)))
-    ] = 0  # set indices outside 2M++ to 0
+
+    try:
+        binindex[
+            np.where((binindex < 0) | (binindex >= len(vproj)))
+        ] = 0  # set indices outside 2M++ to 0
+    except TypeError:  # For single input
+        pass
 
     k = np.searchsorted(zcmb_m, zcmb)  # calculate bin index even if coords inside 2M++
 
