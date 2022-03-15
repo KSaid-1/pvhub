@@ -21,7 +21,7 @@ The PV maps are large files, so to properly clone this repository you must downl
     git lfs install
     git lfs clone https://github.com/KSaid-1/pvhub.git
 ### Windows
-If you have Git Bash, install Git LFS using the [installer](git-lfs.github.com), then continue as normal in Git Bash:
+If you have Git Bash, install Git LFS using the [installer](https://git-lfs.github.com), then continue as normal in Git Bash:
 
     git lfs install
     git lfs clone https://github.com/KSaid-1/pvhub.git
