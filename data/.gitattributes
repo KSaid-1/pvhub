@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0cc17402fdec202119ea845846cebde00046afeb83693df60495d296a818200d
-size 918
+2MRS_redshift.txt filter=lfs diff=lfs merge=lfs -text
+2MRS_redshift_out.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_SDSS.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_SDSS_6dF.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_SDSS_6dF_out.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_SDSS_out.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_redshift.txt filter=lfs diff=lfs merge=lfs -text
+2MPP_redshift_out.txt filter=lfs diff=lfs merge=lfs -text
