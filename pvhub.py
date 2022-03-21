@@ -4,47 +4,71 @@ from astropy.coordinates import SkyCoord
 import pandas as pd
 
 c = 299792.458
-modelflag = 0
+global model_spec, map_inside, map_outside
+model_spec = None
 
-if modelflag == 0:
-    model = "2MPP_SDSS.txt"
-    model_ext = "2MPP_SDSS_out.txt"
-elif modelflag == 1:
-    model = "2MPP_SDSS_6dF.txt"
-    model_ext = "2MPP_SDSS_6dF_out.txt"
-elif modelflag == 2:
-    model = "2MRS_redshift.txt"
-    model_ext = "2MRS_redshift_out.txt"
-elif modelflag == 3:
-    model = "2MPP_redshift.txt"
-    model_ext = "2MPP_redshift_out.txt"
-else:
-    print("Unknown Model")
-    raise ValueError
 
-inp = pd.read_csv(f"./data/{model}", delim_whitespace=True)
-sgx_tm = inp["sgx"]
-sgy_tm = inp["sgy"]
-sgz_tm = inp["sgz"]
-vpred_x = inp["vpred_x"]
-vpred_y = inp["vpred_y"]
-vpred_z = inp["vpred_z"]
-vproj = inp["vproj_2MPP"]
+def choose_model(modelflag):
+    """Choose and load one of the four models:
+    0: 2M++_SDSS (Said et al. 2020, Peterson et al. 2021, Carr et al. 2021)
+    1: 2M++_SDSS_6dF (Said et al. 2020)
+    2: 2MRS (Lilow & Nusser 2021)
+    3: 2M++ (Carrick et al. 2015)"""
+    if modelflag == 0:
+        modelname = "2M++_SDSS"
+        model = "2MPP_SDSS.txt"
+        model_ext = "2MPP_SDSS_out.txt"
+    elif modelflag == 1:
+        modelname = "2M++_SDSS_6dF"
+        model = "2MPP_SDSS_6dF.txt"
+        model_ext = "2MPP_SDSS_6dF_out.txt"
+    elif modelflag == 2:
+        modelname = "2MRS"
+        model = "2MRS_redshift.txt"
+        model_ext = "2MRS_redshift_out.txt"
+    elif modelflag == 3:
+        modelname = "2M++"
+        model = "2MPP_redshift.txt"
+        model_ext = "2MPP_redshift_out.txt"
+    else:
+        raise ValueError("Unknown Model")
 
-dmin = -20000.0
-dmax = 20000.0
-nbins = 129
-bsz = (dmax - dmin) / float(nbins - 1.0)
+    global model_spec, map_inside, map_outside
 
-# Model beyond Vext
-inp = pd.read_csv(f"./data/{model_ext}", delim_whitespace=True)
-zcmb_m = inp["z"]
-vx = inp["Vsgx"]
-vy = inp["Vsgy"]
-vz = inp["Vsgz"]
+    print(f"Loading model {modelflag} ({modelname})")
+
+    # Model inside reconstruction
+    map_inside = pd.read_csv(f"./data/{model}", delim_whitespace=True)
+
+    # Model beyond reconstruction
+    map_outside = pd.read_csv(f"./data/{model_ext}", delim_whitespace=True)
+
+    model_spec = modelflag
+    return model, model_ext
 
 
 def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
+    """Get peculiar velocities from a peculiar velocity map."""
+    global model_spec, map_inside, map_inside
+
+    if model_spec is None:
+        print("No model specified with choose_model(); will load default model.")
+        choose_model(0)
+    else:
+        print(f"Using model {model_spec}.")
+
+    vproj = map_inside["vproj_2MPP"]
+
+    zcmb_m = map_outside["z"]
+    vx = map_outside["Vsgx"]
+    vy = map_outside["Vsgy"]
+    vz = map_outside["Vsgz"]
+
+    dmin = -20000.0
+    dmax = 20000.0
+    nbins = 129
+    bsz = (dmax - dmin) / float(nbins - 1.0)
+
     cz = c * np.array(z_cmb_in)
     zcmb = z_cmb_in
     ccc = SkyCoord(
