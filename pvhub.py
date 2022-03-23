@@ -71,6 +71,7 @@ def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
 
     cz = c * np.array(z_cmb_in)
     zcmb = z_cmb_in
+    # Note that cz is *not* a distance, but treating it as such is self-consistent with 2M++
     ccc = SkyCoord(
         RA * u.degree, DEC * u.degree, distance=cz * u.km / u.s, frame="icrs"
     )
