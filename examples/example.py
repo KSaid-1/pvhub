@@ -1,8 +1,18 @@
-import pvhub
 import pandas as pd
+import sys, os
+
+# add parent directory to path to import pvhub
+cwd = os.getcwd()
+path = os.path.dirname(cwd)
+sys.path.append(path)
+
+import pvhub
+
+# change to parent directory so pvhub can read data
+os.chdir(path)
 
 # Example of data arrays
-inp = pd.read_csv("./inputs/example.csv")
+inp = pd.read_csv("examples/example.csv")
 SNID = inp["SNID"]
 ra = inp["RA_host"]
 dec = inp["Dec_host"]

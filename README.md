@@ -32,11 +32,12 @@ Simply `import pvhub` into your python code, execute the `choose_model()` functi
     pvhub.choose_model(flag)
     pv = pvhub.calculate_pv(RA, Dec, zcmb, extrapolation=True)
 
-A few examples of how to use this code are shown in `example.py`. 
+A few examples of how to use this code are shown in `examples/example.py`. 
+We provide an example set of input objects in `examples/example.csv`. 
+You can run the example code from within the `examples` directory via `python example.py`
 
 You only need to run `choose_model()` once and `calculate_pv()` will continue to use what was selected. 
 If you do not choose a model, the default model 0 will be selected.
 You can input single objects or lists of RA, Dec, and the redshift to calculate for any number of objects at once.
 
 Coordinates are expected to be in decimal degrees, and output peculiar velocities are in km/s.
-We provide an example set of input objects in `inputs/example.csv`.

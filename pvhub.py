@@ -38,10 +38,10 @@ def choose_model(modelflag):
     print(f"Loading model {modelflag} ({modelname})")
 
     # Model inside reconstruction
-    map_inside = pd.read_csv(f"./data/{model}", delim_whitespace=True)
+    map_inside = pd.read_csv(f"data/{model}")
 
     # Model beyond reconstruction
-    map_outside = pd.read_csv(f"./data/{model_ext}", delim_whitespace=True)
+    map_outside = pd.read_csv(f"data/{model_ext}", delim_whitespace=True)
 
     model_spec = modelflag
     return model, model_ext
@@ -93,28 +93,27 @@ def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
     k = np.searchsorted(zcmb_m, zcmb)  # calculate bin index even if coords inside 2M++
 
     in2MPP = (
-        (cz < 0.0665218237200617 * c)  # precise redshift of 2M++ boundary
+        (cz < 19942)  # precise 2M++ boundary
         & ((dmin < sgc.sgx.value) & (sgc.sgx.value < dmax))
         & ((dmin < sgc.sgy.value) & (sgc.sgy.value < dmax))
         & ((dmin < sgc.sgz.value) & (sgc.sgz.value < dmax))
     )
     if extrapolation:
+        r = np.sqrt(
+            np.sum(np.square([sgc.sgx.value, sgc.sgy.value, sgc.sgz.value]), axis=0)
+        )
+        vdot = (
+            (sgc.sgx.value * vx[k]) + (sgc.sgy.value * vy[k]) + (sgc.sgz.value * vz[k])
+        )
         pv = np.where(
             in2MPP,
             vproj.loc[binindex],
-            (
-                (sgc.sgx.value * vx[k])
-                + (sgc.sgy.value * vy[k])
-                + (sgc.sgz.value * vz[k])
-            )
-            / (
-                np.sqrt(
-                    np.sum(
-                        np.square([sgc.sgx.value, sgc.sgy.value, sgc.sgz.value]), axis=0
-                    )
-                )
-            ),
+            vdot / r,
         )
+        # 2M++ is not completely spherical, so extrapolation must be extended inwards in some
+        # parts of the sky. The PV of the centre of the reconstruction is undefined, so we only
+        # use the extrapolation above a redshift securely inside 2M++ but outside the central cell
+        pv = np.where((np.isnan(pv)) & (zcmb > 0.01), vdot / r, pv)
         pv = np.round(pv, 0)
     else:
         pv = np.where(in2MPP, np.round(vproj.loc[binindex], 0), np.nan)
