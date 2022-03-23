@@ -119,7 +119,7 @@ class Recon(ABC):
                 + sgc.sgz.value * self.vextmodel["Vsgz"].loc[k]
             )
             vproj = np.where(
-                (self.vmodel["vproj_2MPP"].loc[binindex].isna() & zcmb > 0.0),
+                ((np.isnan(self.vmodel["vproj_2MPP"].loc[binindex])) & (zcmb > 0.0)),
                 vdot / r,
                 self.vmodel["vproj_2MPP"].loc[binindex],
             )
@@ -199,8 +199,10 @@ if __name__ == "__main__":
         model = c()
         pvs[model.name] = model.calculate_pv(inp["RA_host"], inp["Dec_host"], inp["zcmb"])
     pvs = pd.DataFrame.from_dict(pvs, orient="index", columns=inp["SNID"])
+    print(pvs)
 
     # Example of querying for a single object
+    model = TwoMPP_SDSS()
     test_RA = 334.6
     test_Dec = 40.6
     test_zcmb = 0.0029
