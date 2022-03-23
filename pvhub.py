@@ -29,6 +29,7 @@ class Recon(ABC):
         self.nbins = 129
         self.bsz = (self.dmax - self.dmin) / float(self.nbins - 1.0)
 
+        self.name = None
         self.vmodel, self.vextmodel = None, None
 
     def _load_data(self, modelfile, extfile):
@@ -45,7 +46,6 @@ class Recon(ABC):
         Raises
         ------
         """
-
         # The reconstruction model
         self.vmodel = pd.read_csv(self.data_location + modelfile, delim_whitespace=True)
 
@@ -129,6 +129,7 @@ class TwoMPP_SDSS(Recon):
     def __init__(self):
         super().__init__()
 
+        self.name = "2M++_SDSS"
         model = "/2MPP_SDSS.txt"
         model_ext = "/2MPP_SDSS_out.txt"
 
@@ -139,6 +140,7 @@ class TwoMPP_SDSS_6dF(Recon):
     def __init__(self):
         super().__init__()
 
+        self.name = "2M++_SDSS_6dF"
         model = "/2MPP_SDSS_6dF.txt"
         model_ext = "/2MPP_SDSS_6dF_out.txt"
 
@@ -149,6 +151,7 @@ class TwoMRS_redshift(Recon):
     def __init__(self):
         super().__init__()
 
+        self.name = "2MRS"
         model = "/2MRS_redshift.txt"
         model_ext = "/2MRS_redshift_out.txt"
 
@@ -159,27 +162,38 @@ class TwoMPP_redshift(Recon):
     def __init__(self):
         super().__init__()
 
+        self.name = "2M++"
         model = "/2MPP_redshift.txt"
         model_ext = "/2MPP_redshift_out.txt"
 
         self._load_data(model, model_ext)
 
 
+def get_concrete(baseclass):
+    classes = baseclass.__subclasses__()
+    for c in classes:
+        classes += c.__subclasses__()
+    final_classes = [c for c in classes if ABC not in c.__bases__]
+    return final_classes
+
+
 if __name__ == "__main__":
 
     from pvhub import *
 
-    # Load in the various data files and run some unit tests
-    model = TwoMPP_SDSS()
+    # Get a list of all models
+    models = [c for c in get_concrete(Recon)]
 
+    # Read in some test data
     inp = pd.read_csv("./inputs/example.csv")
-    SNID = inp["SNID"]
-    ra = inp["RA_host"]
-    dec = inp["Dec_host"]
-    zcmb = inp["zcmb"]
-    pv = model.calculate_pv(ra, dec, zcmb)
-    for sn, p in zip(SNID, pv):
-        print(f"PV of object {sn} = {p}")
+
+    # Loop over all the models and return the predicted peculiar velocities.
+    # Store them in a dataframe with the model name as rows, and each SNe as columns.
+    pvs = {}
+    for c in models:
+        model = c()
+        pvs[model.name] = model.calculate_pv(inp["RA_host"], inp["Dec_host"], inp["zcmb"])
+    pvs = pd.DataFrame.from_dict(pvs, orient="index", columns=inp["SNID"])
 
     # Example of querying for a single object
     test_RA = 334.6
