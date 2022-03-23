@@ -119,7 +119,9 @@ class Recon(ABC):
                 + sgc.sgz.value * self.vextmodel["Vsgz"].loc[k]
             )
             vproj = np.where(
-                self.vmodel["vproj_2MPP"].loc[binindex].isna(), vdot / r, self.vmodel["vproj_2MPP"].loc[binindex]
+                (self.vmodel["vproj_2MPP"].loc[binindex].isna() & zcmb > 0.0),
+                vdot / r,
+                self.vmodel["vproj_2MPP"].loc[binindex],
             )
             pv = np.round(np.where(in2MPP, vproj, vdot / r), 0)
         else:
