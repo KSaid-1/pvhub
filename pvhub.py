@@ -121,7 +121,7 @@ class Recon(ABC):
         k = np.searchsorted(self.vextmodel["z"], zcmb)  # calculate bin index even if coords inside 2M++
 
         in2MPP = (
-            (const.c.value * zcmb < 19942)  # precise redshift of 2M++ boundary
+            (const.c.value/1000.0 * zcmb < 19942)  # precise redshift of 2M++ boundary
             & ((self.dmin < sgc.sgx.value) & (sgc.sgx.value < self.dmax))
             & ((self.dmin < sgc.sgy.value) & (sgc.sgy.value < self.dmax))
             & ((self.dmin < sgc.sgz.value) & (sgc.sgz.value < self.dmax))

@@ -21,9 +21,9 @@ print(f"PV of object at (RA, Dec, zcmb) = ({test_RA}, {test_Dec}, {test_zcmb}): 
 # Turning off extrapolation beyond 2M++, z>0.067
 print("Querying a different model for objects at different redshift, this time with no extrapolation:")
 
-model = TwoMPP_SDSS_6dF(verbose=True)
+model2 = TwoMPP_SDSS_6dF(verbose=True)
 test_zs = [0.05, 0.06, 0.07]
-pv = model.calculate_pv([334.6] * 3, [40.6] * 3, test_zs, extrapolation=False)
+pv = model2.calculate_pv([334.6] * 3, [40.6] * 3, test_zs, extrapolation=False)
 for z, p in zip(test_zs, pv):
     print(f"z={z}, vpec={p}")
 print("")
