@@ -1,121 +1,249 @@
+import os
+import inspect
 import numpy as np
-import astropy.units as u
-from astropy.coordinates import SkyCoord
 import pandas as pd
+import astropy.units as u
+import astropy.constants as const
+from abc import ABC
+from astropy.coordinates import SkyCoord
 
-c = 299792.458
-global model_spec, map_inside, map_outside
-model_spec = None
+
+class Recon(ABC):
+    """Abstract base class for the reconstruction data included in pvhub
+
+    Meant to only be accessed through the various listed reconstruction subclasses. The attributes below are inherited
+    by these subclasses
+
+    Attributes
+    ----------
+    """
+
+    def __init__(self):
+
+        current_file = os.path.dirname(inspect.stack()[0][1])
+        self.data_location = os.path.normpath(current_file + "/data") + "/"
+
+        # The properties of the grid on which the reconstructions are stored.
+        self.dmin = -20000.0
+        self.dmax = 20000.0
+        self.nbins = 129
+        self.bsz = (self.dmax - self.dmin) / float(self.nbins - 1.0)
+
+        self.name = None
+        self.vmodel, self.vextmodel = None, None
+
+    def _load_data(self, modelfile, extfile):
+        """Loads the relevant reconstruction model files and stores the attributes
+
+        Args
+        ----
+            modelfile : string
+                The filepath for the file containing the reconstructed field as a function of
+                cartesian coordinates
+            extfile : string
+                The filepath for the file containing the external field prediction as a function of redshift
+
+        Raises
+        ------
+        """
+
+        try:
+
+            # The reconstruction model
+            self.vmodel = pd.read_csv(self.data_location + modelfile, delim_whitespace=True)
+
+            # The model beyond Vext
+            self.vextmodel = pd.read_csv(self.data_location + extfile, delim_whitespace=True)
+
+            print("Loaded model " + self.name)
+
+        except:
+
+            print("ERROR: Unable to load model " + self.name)
+            print("Please check files " + modelfile + " and " + extfile + " are in " + self.data_location)
+
+        return
+
+    def calculate_pv(self, ra, dec, zcmb, extrapolation=True):
+        """Interpolates/extrapolates the reconstruction for a set of ra, dec and CMB-frame redshifts
+
+        Args
+        ----
+            ra : float, np.ndarray
+                A value or array of values for the Right Ascention to be queried.
+            dec : float, np.ndarray
+                A value or array of values for the Declination to be queried.
+            z_cmb_in:  float, np.ndarray
+                A value or array of values for the CMB-frame redshifts to be queried.
+            extrapolation: bool
+                Whether or not to extrapolate outside of the reconstructed field based on a smooth model of the
+                velocity as a function of redshift. Default = True
+
+        Returns
+        -------
+            pv : np.ndarray
+                An array of peculiar velocities for each of the coordinates passed in
+
+        Raises
+        ------
+        """
+
+        ra, dec, zcmb = np.asarray(ra), np.asarray(dec), np.asarray(zcmb)
+        ccc = SkyCoord(
+            ra * u.degree,
+            dec * u.degree,
+            # Note that cz is *not* a distance, but treating it as such is self-consistent with 2M++
+            distance=const.c.value / 1000.0 * zcmb * u.km / u.s,
+            frame="icrs",
+        )
+
+        sgc = ccc.transform_to("supergalactic")
+        sgc.representation_type = "cartesian"
+
+        xbin = np.round(((sgc.sgx.value - self.dmin) / self.bsz), 0)
+        ybin = np.round(((sgc.sgy.value - self.dmin) / self.bsz), 0)
+        zbin = np.round(((sgc.sgz.value - self.dmin) / self.bsz), 0)
+
+        # calculate bin index even if coords outside 2M++
+        binindex = xbin.astype(int) * self.nbins * self.nbins + ybin.astype(int) * self.nbins + zbin.astype(int)
+
+        # set indices outside 2M++ to 0
+        try:
+            binindex[np.where((binindex < 0) | (binindex >= len(self.vmodel["vproj_2MPP"])))] = 0
+        except TypeError:  # For single input
+            pass
+
+        k = np.searchsorted(self.vextmodel["z"], zcmb)  # calculate bin index even if coords inside 2M++
+
+        in2MPP = (
+            (const.c.value * z < 19942)  # precise redshift of 2M++ boundary
+            & ((self.dmin < sgc.sgx.value) & (sgc.sgx.value < self.dmax))
+            & ((self.dmin < sgc.sgy.value) & (sgc.sgy.value < self.dmax))
+            & ((self.dmin < sgc.sgz.value) & (sgc.sgz.value < self.dmax))
+        )
+
+        if extrapolation:
+            r = np.sqrt(np.sum(np.square([sgc.sgx.value, sgc.sgy.value, sgc.sgz.value]), axis=0))
+            vdot = (
+                sgc.sgx.value * self.vextmodel["Vsgx"].loc[k]
+                + sgc.sgy.value * self.vextmodel["Vsgy"].loc[k]
+                + sgc.sgz.value * self.vextmodel["Vsgz"].loc[k]
+            )
+            pv = np.where(
+                in2MPP,
+                vproj.loc[binindex],
+                vdot / r,
+            )
+            # 2M++ is not completely spherical, so extrapolation must be extended inwards in some
+            # parts of the sky. The PV of the centre of the reconstruction is undefined, so we only
+            # use the extrapolation above a redshift securely inside 2M++ but outside the central cell
+            pv = np.where((np.isnan(pv)) & (zcmb > 0.01), vdot / r, pv)
+            pv = np.round(pv, 0)
+        else:
+            pv = np.where(in2MPP, np.round(self.vmodel["vproj_2MPP"].loc[binindex], 0), np.nan)
+
+        return pv
 
 
-def choose_model(modelflag):
-    """Choose and load one of the four models:
-    0: 2M++_SDSS (Said et al. 2020, Peterson et al. 2021, Carr et al. 2021)
-    1: 2M++_SDSS_6dF (Said et al. 2020)
-    2: 2MRS (Lilow & Nusser 2021)
-    3: 2M++ (Carrick et al. 2015)"""
-    if modelflag == 0:
-        modelname = "2M++_SDSS"
+class TwoMPP_SDSS(Recon):
+    def __init__(self):
+        super().__init__()
+
+        self.name = "2M++_SDSS"
         model = "2MPP_SDSS.txt"
         model_ext = "2MPP_SDSS_out.txt"
-    elif modelflag == 1:
-        modelname = "2M++_SDSS_6dF"
+
+        self._load_data(model, model_ext)
+
+
+class TwoMPP_SDSS_6dF(Recon):
+    def __init__(self):
+        super().__init__()
+
+        self.name = "2M++_SDSS_6dF"
         model = "2MPP_SDSS_6dF.txt"
         model_ext = "2MPP_SDSS_6dF_out.txt"
-    elif modelflag == 2:
-        modelname = "2MRS"
+
+        self._load_data(model, model_ext)
+
+
+class TwoMRS_redshift(Recon):
+    def __init__(self):
+        super().__init__()
+
+        self.name = "2MRS_redshift"
         model = "2MRS_redshift.txt"
         model_ext = "2MRS_redshift_out.txt"
-    elif modelflag == 3:
-        modelname = "2M++"
+
+        self._load_data(model, model_ext)
+
+
+class TwoMPP_redshift(Recon):
+    def __init__(self):
+        super().__init__()
+
+        self.name = "2M++_redshift"
         model = "2MPP_redshift.txt"
         model_ext = "2MPP_redshift_out.txt"
-    else:
-        raise ValueError("Unknown Model")
 
-    global model_spec, map_inside, map_outside
-
-    print(f"Loading model {modelflag} ({modelname})")
-
-    # Model inside reconstruction
-    map_inside = pd.read_csv(f"data/{model}")
-
-    # Model beyond reconstruction
-    map_outside = pd.read_csv(f"data/{model_ext}", delim_whitespace=True)
-
-    model_spec = modelflag
-    return model, model_ext
+        self._load_data(model, model_ext)
 
 
-def calculate_pv(RA, DEC, z_cmb_in, extrapolation=True):
-    """Get peculiar velocities from a peculiar velocity map."""
-    global model_spec, map_inside, map_inside
+def get_models():
+    """Utility function to return all the reconstruction model subclasses
 
-    if model_spec is None:
-        print("No model specified with choose_model(); will load default model.")
-        choose_model(0)
-    else:
-        print(f"Using model {model_spec}.")
+    Args
+    ----
+        None
 
-    vproj = map_inside["vproj_2MPP"]
+    Returns
+    -------
+        final_classes: list
+            A list of all the reconstruction model subclasses
+    """
 
-    zcmb_m = map_outside["z"]
-    vx = map_outside["Vsgx"]
-    vy = map_outside["Vsgy"]
-    vz = map_outside["Vsgz"]
+    classes = Recon.__subclasses__()
+    for c in classes:
+        classes += c.__subclasses__()
+    final_classes = [c for c in classes if ABC not in c.__bases__]
 
-    dmin = -20000.0
-    dmax = 20000.0
-    nbins = 129
-    bsz = (dmax - dmin) / float(nbins - 1.0)
+    return final_classes
 
-    cz = c * np.array(z_cmb_in)
-    zcmb = z_cmb_in
-    # Note that cz is *not* a distance, but treating it as such is self-consistent with 2M++
-    ccc = SkyCoord(
-        RA * u.degree, DEC * u.degree, distance=cz * u.km / u.s, frame="icrs"
-    )
-    sgc = ccc.transform_to("supergalactic")
-    sgc.representation_type = "cartesian"
-    xbin = np.round(((sgc.sgx.value - dmin) / bsz), 0)
-    ybin = np.round(((sgc.sgy.value - dmin) / bsz), 0)
-    zbin = np.round(((sgc.sgz.value - dmin) / bsz), 0)
-    binindex = (
-        xbin.astype(int) * nbins * nbins + ybin.astype(int) * nbins + zbin.astype(int)
-    )  # calculate bin index even if coords outside 2M++
 
-    try:
-        binindex[
-            np.where((binindex < 0) | (binindex >= len(vproj)))
-        ] = 0  # set indices outside 2M++ to 0
-    except TypeError:  # For single input
-        pass
+if __name__ == "__main__":
 
-    k = np.searchsorted(zcmb_m, zcmb)  # calculate bin index even if coords inside 2M++
+    from pvhub import *
 
-    in2MPP = (
-        (cz < 19942)  # precise 2M++ boundary
-        & ((dmin < sgc.sgx.value) & (sgc.sgx.value < dmax))
-        & ((dmin < sgc.sgy.value) & (sgc.sgy.value < dmax))
-        & ((dmin < sgc.sgz.value) & (sgc.sgz.value < dmax))
-    )
-    if extrapolation:
-        r = np.sqrt(
-            np.sum(np.square([sgc.sgx.value, sgc.sgy.value, sgc.sgz.value]), axis=0)
-        )
-        vdot = (
-            (sgc.sgx.value * vx[k]) + (sgc.sgy.value * vy[k]) + (sgc.sgz.value * vz[k])
-        )
-        pv = np.where(
-            in2MPP,
-            vproj.loc[binindex],
-            vdot / r,
-        )
-        # 2M++ is not completely spherical, so extrapolation must be extended inwards in some
-        # parts of the sky. The PV of the centre of the reconstruction is undefined, so we only
-        # use the extrapolation above a redshift securely inside 2M++ but outside the central cell
-        pv = np.where((np.isnan(pv)) & (zcmb > 0.01), vdot / r, pv)
-        pv = np.round(pv, 0)
-    else:
-        pv = np.where(in2MPP, np.round(vproj.loc[binindex], 0), np.nan)
-    return pv
+    # Get a list of all models and check they can be read in.
+    # This is just a unit test. See examples.py for usage examples
+    for model in get_models():
+        model()
+
+    """# Read in some test data
+    inp = pd.read_csv("./inputs/example.csv")
+
+    # Loop over all the models and return the predicted peculiar velocities.
+    # Store them in a dataframe with the model name as rows, and each SNe as columns.
+    pvs = {}
+    for c in models:
+        model = c()
+        pvs[model.name] = model.calculate_pv(inp["RA_host"], inp["Dec_host"], inp["zcmb"])
+    pvs = pd.DataFrame.from_dict(pvs, orient="index", columns=inp["SNID"])
+    print(pvs)
+
+    # Example of querying for a single object
+    model = TwoMPP_SDSS()
+    test_RA = 334.6
+    test_Dec = 40.6
+    test_zcmb = 0.0029
+    pv = model.calculate_pv(test_RA, test_Dec, test_zcmb)
+    print(f"PV of object at (RA, Dec, zcmb) = ({test_RA}, {test_Dec}, {test_zcmb}): {pv}")
+
+    # Turning off extrapolation beyond 2M++, z>0.067
+    test_zs = [0.05, 0.06, 0.07]
+    test_RA = [334.6]
+    test_Dec = [40.6]
+    pv = model.calculate_pv(test_RA * 3, test_Dec * 3, test_zs, extrapolation=False)
+    print("No extrapolation:")
+    for z, p in zip(test_zs, pv):
+        print(f"z={z}, vpec={p}")"""
