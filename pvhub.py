@@ -190,7 +190,7 @@ if __name__ == "__main__":
     models = [c for c in get_concrete(Recon)]
 
     # Read in some test data
-    inp = pd.read_csv("./inputs/example.csv")
+    inp = pd.read_csv("./examples/examples.csv")
 
     # Loop over all the models and return the predicted peculiar velocities.
     # Store them in a dataframe with the model name as rows, and each SNe as columns.
@@ -200,14 +200,6 @@ if __name__ == "__main__":
         pvs[model.name] = model.calculate_pv(inp["RA_host"], inp["Dec_host"], inp["zcmb"])
     pvs = pd.DataFrame.from_dict(pvs, orient="index", columns=inp["SNID"])
     print(pvs)
-
-    # Example of querying for a single object
-    model = TwoMPP_SDSS()
-    test_RA = 334.6
-    test_Dec = 40.6
-    test_zcmb = 0.0029
-    pv = model.calculate_pv(test_RA, test_Dec, test_zcmb)
-    print(f"PV of object at (RA, Dec, zcmb) = ({test_RA}, {test_Dec}, {test_zcmb}): {pv}")
 
     # Turning off extrapolation beyond 2M++, z>0.067
     test_zs = [0.05, 0.06, 0.07]
