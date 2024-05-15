@@ -1,10 +1,10 @@
 import os
 import inspect
 import numpy as np
+from abc import ABC
 import pandas as pd
 import astropy.units as u
 import astropy.constants as const
-from abc import ABC
 from astropy.coordinates import SkyCoord
 
 
@@ -57,7 +57,7 @@ class Recon(ABC):
             self.vmodel = pd.read_csv(self.data_location + modelfile)
 
             # The model beyond Vext
-            self.vextmodel = pd.read_csv(self.data_location + extfile, delim_whitespace=True)
+            self.vextmodel = pd.read_csv(self.data_location + extfile, sep="\s+")
 
             if self.verbose:
                 print("Loaded model " + self.name)
@@ -113,15 +113,15 @@ class Recon(ABC):
         binindex = xbin.astype(int) * self.nbins * self.nbins + ybin.astype(int) * self.nbins + zbin.astype(int)
 
         # set indices outside 2M++ to 0
-        try:
+        if binindex.size > 1:
             binindex[np.where((binindex < 0) | (binindex >= len(self.vmodel["vproj_2MPP"])))] = 0
-        except TypeError:  # For single input
-            pass
+        else:
+            binindex = 0 if (binindex < 0 or binindex >= len(self.vmodel["vproj_2MPP"])) else binindex
 
         k = np.searchsorted(self.vextmodel["z"], zcmb)  # calculate bin index even if coords inside 2M++
 
         in2MPP = (
-            (const.c.value/1000.0 * zcmb < 19942)  # precise redshift of 2M++ boundary
+            (const.c.value / 1000.0 * zcmb < 19942)  # precise redshift of 2M++ boundary
             & ((self.dmin < sgc.sgx.value) & (sgc.sgx.value < self.dmax))
             & ((self.dmin < sgc.sgy.value) & (sgc.sgy.value < self.dmax))
             & ((self.dmin < sgc.sgz.value) & (sgc.sgz.value < self.dmax))
@@ -156,7 +156,8 @@ class TwoMPP_SDSS(Recon):
         name = "2M++_SDSS"
         model = "2MPP_SDSS.txt"
         model_ext = "2MPP_SDSS_out.txt"
-        super().__init__(name = name, modelfile = model, extfile= model_ext, verbose=verbose)
+        super().__init__(name=name, modelfile=model, extfile=model_ext, verbose=verbose)
+
 
 class TwoMPP_SDSS_6dF(Recon):
     def __init__(self, verbose=False):
@@ -164,7 +165,7 @@ class TwoMPP_SDSS_6dF(Recon):
         name = "2M++_SDSS_6dF"
         model = "2MPP_SDSS_6dF.txt"
         model_ext = "2MPP_SDSS_6dF_out.txt"
-        super().__init__(name = name, modelfile = model, extfile= model_ext, verbose=verbose)
+        super().__init__(name=name, modelfile=model, extfile=model_ext, verbose=verbose)
 
 
 class TwoMRS_redshift(Recon):
@@ -173,7 +174,8 @@ class TwoMRS_redshift(Recon):
         name = "2MRS_redshift"
         model = "2MRS_redshift.txt"
         model_ext = "2MRS_redshift_out.txt"
-        super().__init__(name = name, modelfile = model, extfile= model_ext, verbose=verbose)
+        super().__init__(name=name, modelfile=model, extfile=model_ext, verbose=verbose)
+
 
 class TwoMPP_redshift(Recon):
     def __init__(self, verbose=False):
@@ -181,7 +183,7 @@ class TwoMPP_redshift(Recon):
         name = "2M++_redshift"
         model = "2MPP_redshift.txt"
         model_ext = "2MPP_redshift_out.txt"
-        super().__init__(name = name, modelfile = model, extfile= model_ext, verbose=verbose)
+        super().__init__(name=name, modelfile=model, extfile=model_ext, verbose=verbose)
 
 
 def get_models():
