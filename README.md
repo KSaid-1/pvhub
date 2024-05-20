@@ -2,7 +2,7 @@
 Function to predict peculiar velocities given RA (right ascension), Dec (declination), and z (redshift). All maps are in redshift-space.
 All maps are limited to z < 0.067 with a flag in the function for extrapolation option. Conversion from real-space to redshift space as well as 
 the extrapolation option are explained by [Carr et al. (2021)](https://ui.adsabs.harvard.edu/abs/2021arXiv211201471C).  
-## Maps
+## Maps:
 The number of each map is the corresponding flag in `pvhub.py`
 ### default
 0. 2MPP-SDSS ([Said et al. 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.497.1275S); [Peterson et al. 2021](https://ui.adsabs.harvard.edu/abs/2021arXiv211003487P); [Carr et al. 2021](https://ui.adsabs.harvard.edu/abs/2021arXiv211201471C)) 
