@@ -71,12 +71,13 @@ def perform_corr(z_helio, RA, Dec):
     return z_CMB
 
 
-def generate_luminosity_distance(ra, dec, cz_helio, recon, H0, om=0.31, dist_lookup_table=None, nsamples=1000):
+def generate_luminosity_distance(ra, dec, cz_helio, cz_helio_err, recon, H0, om=0.31, dist_lookup_table=None, nsamples=1000):
 
     pverr = 250.0
-    z_cmb = perform_corr(cz_helio / LightSpeed, ra, dec)
-    pv = [recon.calculate_pv(ra, dec, z_cmb)]
-    pvsamples = np.random.normal(pv, pverr, (nsamples, len(pv)))
+    cz_helio_samples = np.random.normal(cz_helio, cz_helio_err, nsamples)
+    z_cmb = perform_corr(cz_helio_samples / LightSpeed, ra, dec)
+    pv = recon.calculate_pv(ra, dec, z_cmb)
+    pvsamples = np.random.normal(pv, pverr)
     z_cosmo = (1.0 + z_cmb) / (1.0 + pvsamples / LightSpeed) - 1.0
 
     if dist_lookup_table is not None:
@@ -85,7 +86,7 @@ def generate_luminosity_distance(ra, dec, cz_helio, recon, H0, om=0.31, dist_loo
         cosmo = FlatLambdaCDM(H0=H0, Om0=om)
         d_L = (1.0 + cz_helio / LightSpeed) * cosmo.comoving_distance(z_cosmo).value
 
-    return d_L.T
+    return d_L
 
 
 def get_GW170817(type="high_spin"):
@@ -143,8 +144,8 @@ def run_nautilus(ra, dec, cz_helio, cz_helio_err, recon_pv, recon_pv_err, gwpdf,
     def prior_transform(u):
         """Transforms the unit cube to the parameter space according to the priors"""
 
-        cosi = 0.1 * u[0] - 1.0
-        dl = 30.0 * u[1] ** 2 + 30.0
+        cosi = u[0] - 1.0
+        dl = 30.0 * u[1] ** 2 + 20.0
         H0 = np.exp((np.log(120.0) - np.log(20.0)) * u[2] + np.log(20.0))
         cz = 2000.0 * u[3] + 2000.0
 
@@ -203,15 +204,16 @@ if __name__ == "__main__":
         ra_group[group_choice],
         dec_group[group_choice],
         cz_helio_group[group_choice],
+        cz_group_err[group_choice],
         recon,
         70.0,
         dist_lookup_table=dist_lookup_table,
     )
-    print(np.mean(d_L_samples, axis=1), np.std(d_L_samples, axis=1))
+    print(np.mean(d_L_samples), np.std(d_L_samples))
 
     # Fit for H0, inclination angle and true PV of NGC4993 given the GW170817 likelihood and the reconstruction
     c = ChainConsumer()
-    gwpdf = get_GW170817(type="vlbi")
+    gwpdf = get_GW170817()
     ra, dec, cz_helio, cz_helio_err = (
         ra_group[group_choice],
         dec_group[group_choice],
